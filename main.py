@@ -3,75 +3,83 @@
 import numpy as np
 import argparse
 from copy import deepcopy
+import matplotlib.pyplot as plt
 import torch
-import gym
 
 from normalized_env import NormalizedEnv
 from evaluator import Evaluator
 from ddpg import DDPG
 from util import *
+from environment import *
 
-gym.undo_logger_setup()
 
-def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_episode_length=None, debug=False):
+def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_episode_length, debug=False):
 
     agent.is_training = True
-    step = episode = episode_steps = 0
-    episode_reward = 0.
-    observation = None
-    while step < num_iterations:
-        # reset if it is the start of episode
-        if observation is None:
-            observation = deepcopy(env.reset())
-            agent.reset(observation)
+    episode_steps = 0
+    data = util.getResourceDataVec(args.env)
+    l = len(data) - 1
+    done = False
+    episodes = []
+    total_rewards = []
+    for episode in range(args.max_episode_length):
+        episode_reward = 0
+        request = env.request
+        observation = deepcopy(env.reset(data, agent.nb_states, request))
+        agent.reset(observation)
+        action_cnt = 0
 
-        # agent pick action ...
-        if step <= args.warmup:
-            action = agent.random_action()
-        else:
-            action = agent.select_action(observation)
-        
-        # env response with next_observation, reward, terminate_info
-        observation2, reward, done, info = env.step(action)
-        observation2 = deepcopy(observation2)
-        if max_episode_length and episode_steps >= max_episode_length -1:
-            done = True
+        for step in range(l-agent.nb_states):
+            if step <= args.warmup:
+                action = agent.random_action()
+            else:
+                action = agent.select_action(observation)
+            # env response with next_observation, reward, terminate_info
+            reward, request = env.step(action, observation)
+            observation2 = env.getState(data, step, agent.nb_states + 1)
+            observation2 = deepcopy(observation2)
+            if max_episode_length and episode_steps >= max_episode_length - 1:
+                done = True
 
-        # agent observe and update policy
-        agent.observe(reward, observation2, done)
-        if step > args.warmup :
-            agent.update_policy()
-        
-        # [optional] evaluate
-        if evaluate is not None and validate_steps > 0 and step % validate_steps == 0:
-            policy = lambda x: agent.select_action(x, decay_epsilon=False)
-            validate_reward = evaluate(env, policy, debug=False, visualize=False)
-            if debug: prYellow('[Evaluate] Step_{:07d}: mean_reward:{}'.format(step, validate_reward))
+            # agent observe and update policy
+            agent.observe(reward, observation2, done)
+            if step > args.warmup:
+                agent.update_policy()
 
-        # [optional] save intermideate model
-        if step % int(num_iterations/3) == 0:
-            agent.save_model(output)
+            # [optional] evaluate
+            if evaluate is not None and validate_steps > 0 and step % validate_steps == 0:
+                policy = lambda x: agent.select_action(x, decay_epsilon=False)
+                validate_reward , results = evaluate(env, data, agent, request, policy, debug=False, visualize=False)
+                if debug: prYellow('[Evaluate] Step_{:07d}: mean_reward:{}'.format(step, validate_reward))
 
-        # update 
-        step += 1
-        episode_steps += 1
-        episode_reward += reward
-        observation = deepcopy(observation2)
+            # [optional] save intermideate model
+            if (step % 100 == 0) & (step != 0):
+                agent.save_model(output)
 
-        if done: # end of episode
-            if debug: prGreen('#{}: episode_reward:{} steps:{}'.format(episode,episode_reward,step))
+            if (action == 1.0) | (action == -1.0):
+                action_cnt = action_cnt + 1
 
-            agent.memory.append(
-                observation,
-                agent.select_action(observation),
-                0., False
-            )
+            episode_reward += reward
+            observation = deepcopy(observation2)
+            if step == l - 1 - agent.nb_states:
+                episodes.append(episode)
+                total_rewards.append(episode_reward)
+                if(episode != 0) & (episode % 100 ==0):
+                    save_results('./output/validate_reward_' + str(episode), episodes, results, total_rewards)
+                # print('===================================================')
+                print('#{}: episode_reward:{} | action zero count:{}'.format(episode, episode_reward, action_cnt))
+                # print('===================================================')
 
-            # reset
-            observation = None
-            episode_steps = 0
-            episode_reward = 0.
-            episode += 1
+                agent.memory.append(
+                    observation,
+                    agent.select_action(observation),
+                    0., False
+                )
+
+                # reset
+                observation = None
+                episode_reward = 0.
+
 
 def test(num_episodes, agent, env, evaluate, model_path, visualize=True, debug=False):
 
@@ -84,13 +92,31 @@ def test(num_episodes, agent, env, evaluate, model_path, visualize=True, debug=F
         validate_reward = evaluate(env, policy, debug=debug, visualize=visualize, save=False)
         if debug: prYellow('[Evaluate] #{}: mean_reward:{}'.format(i, validate_reward))
 
+def save_results(fn, episodes, result, reward):
+
+    y = np.mean(result, axis=0)
+    error = np.std(result, axis=0)
+
+    x = episodes
+    ax = plt.subplot(2, 1, 1)
+    plt.plot(x, y)
+    plt.xlabel('Timestep')
+    plt.ylabel('Average Reward')
+    ax.errorbar(x, y, yerr=error, fmt='-o')
+
+    plt.subplot(2, 1, 2)
+    plt.plot(x, reward)
+    plt.xlabel('Timestep')
+    plt.ylabel('Total Reward')
+    plt.savefig(fn + '.png')
+
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch on TORCS with Multi-modal')
 
     parser.add_argument('--mode', default='train', type=str, help='support option: train/test')
-    parser.add_argument('--env', default='Pendulum-v0', type=str, help='open-ai gym environment')
+    parser.add_argument('--env', default='kubernetes_pod_container_zipkin_train', type=str, help='resource environment')
     parser.add_argument('--hidden1', default=400, type=int, help='hidden num of first fully connect layer')
     parser.add_argument('--hidden2', default=300, type=int, help='hidden num of second fully connect layer')
     parser.add_argument('--rate', default=0.001, type=float, help='learning rate')
@@ -104,8 +130,8 @@ if __name__ == "__main__":
     parser.add_argument('--ou_theta', default=0.15, type=float, help='noise theta')
     parser.add_argument('--ou_sigma', default=0.2, type=float, help='noise sigma') 
     parser.add_argument('--ou_mu', default=0.0, type=float, help='noise mu') 
-    parser.add_argument('--validate_episodes', default=20, type=int, help='how many episode to perform during validate experiment')
-    parser.add_argument('--max_episode_length', default=500, type=int, help='')
+    parser.add_argument('--validate_episodes', default=50, type=int, help='how many episode to perform during validate experiment')
+    parser.add_argument('--max_episode_length', default=1000, type=int, help='')
     parser.add_argument('--validate_steps', default=2000, type=int, help='how many steps to perform a validate experiment')
     parser.add_argument('--output', default='output', type=str, help='')
     parser.add_argument('--debug', dest='debug', action='store_true')
@@ -122,7 +148,8 @@ if __name__ == "__main__":
     if args.resume == 'default':
         args.resume = 'output/{}-run0'.format(args.env)
 
-    env = NormalizedEnv(gym.make(args.env))
+
+    env = Environment()
 
     if args.seed > 0:
         np.random.seed(args.seed)

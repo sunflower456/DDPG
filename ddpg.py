@@ -21,8 +21,7 @@ class DDPG(object):
             self.seed(args.seed)
 
         self.nb_states = nb_states
-        self.nb_actions= nb_actions
-        
+        self.nb_actions = nb_actions
         # Create Actor and Critic Network
         net_cfg = {
             'hidden1':args.hidden1, 
@@ -66,13 +65,13 @@ class DDPG(object):
 
         # Prepare for the target q batch
         next_q_values = self.critic_target([
-            to_tensor(next_state_batch, volatile=True),
-            self.actor_target(to_tensor(next_state_batch, volatile=True)),
+            to_tensor(next_state_batch, requires_grad=True),
+            self.actor_target(to_tensor(next_state_batch, requires_grad=True)),
         ])
-        next_q_values.volatile=False
+        # next_q_values.requires_grad=False
 
         target_q_batch = to_tensor(reward_batch) + \
-            self.discount*to_tensor(terminal_batch.astype(np.float))*next_q_values
+            self.discount*to_tensor(terminal_batch.astype(np.float64))*next_q_values
 
         # Critic update
         self.critic.zero_grad()
