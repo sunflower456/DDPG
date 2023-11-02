@@ -65,8 +65,10 @@ class Environment(gym.Env):
         if ((resource / (self.request + action)) < 0.75) & ((resource / (self.request + action)) > 0.10):
             reward = 1
             self.request = self.request + action
-        else:
+        elif ((resource / (self.request + action)) <= 0.10) :
             reward = 0
+        else:
+            reward = -1
 
         # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action) * 100)))
         return resource, reward, done, info

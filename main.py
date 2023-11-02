@@ -85,20 +85,20 @@ def test(num_episodes, agent, env, evaluate, model_path, visualize=True, debug=T
     policy = lambda x: agent.select_action(x, decay_epsilon=False)
 
     for i in range(num_episodes):
-        validate_reward, results = evaluate(env, agent, policy, debug=False, visualize=False)
+        validate_reward, results = evaluate(env, policy, debug=False, visualize=False)
         print('[Evaluate] #{}: mean_reward:{}'.format(i, validate_reward))
 
 def save_results(fn, episodes, result, reward):
 
     y = np.mean(result, axis=0)
-    error = np.std(result, axis=0)
+    # error = np.std(result, axis=0)
 
     x = episodes
     ax = plt.subplot(2, 1, 1)
     plt.plot(x, y)
     plt.xlabel('Timestep')
     plt.ylabel('Average Reward')
-    ax.errorbar(x, y, yerr=error, fmt='-o')
+    # ax.errorbar(x, y, yerr=error, fmt='-o')
 
     plt.subplot(2, 1, 2)
     plt.plot(x, reward)
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.output = get_output_folder(args.output, args.env)
     if args.resume == 'default':
-        args.resume = 'output/{}-run5'.format(args.env)
+        args.resume = 'output/{}-run1'.format(args.env)
 
     data = util.getResourceDataVec(args.env)
     env = Environment(data)
