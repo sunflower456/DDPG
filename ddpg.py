@@ -68,7 +68,6 @@ class DDPG(object):
             to_tensor(next_state_batch, requires_grad=True),
             self.actor_target(to_tensor(next_state_batch, requires_grad=True)),
         ])
-        # next_q_values.requires_grad=False
 
         target_q_batch = to_tensor(reward_batch) + \
             self.discount*to_tensor(terminal_batch.astype(np.float64))*next_q_values
@@ -126,10 +125,9 @@ class DDPG(object):
         ).squeeze(0)
         action += self.is_training*max(self.epsilon, 0)*self.random_process.sample()
         action = np.clip(action, -1., 1.)
-
         if decay_epsilon:
             self.epsilon -= self.depsilon
-        
+
         self.a_t = action
         return action
 

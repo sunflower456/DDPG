@@ -1,24 +1,22 @@
+import gym
 import numpy as np
 import util
 import math
 from gym import spaces
-class Environment(object):
-    def __init__(self):
-        self.request = 2
-        self.num_up = 0  # upscaling 횟수
-        self.num_down = 0  # downscaling 횟수
-        self.num_stay = 0  # stay 횟수
-        self.num_scaling = 0
+class Environment(gym.Env):
+    metadata = {'render.modes': ['human'] }
+    def __init__(self, data):
+        self.request = 0.1
         self.min_action = -1.0
         self.max_action = 1.0
         self.min_position = 0.0
-        self.max_position = 15.0
-        self.max_scale = 0.07
+        self.max_position = 1.0
+        self.data = data
         self.low_state = np.array(
-            [self.min_position, -self.max_scale], dtype=np.float32
+            [self.max_position, self.min_position], dtype=np.float32
         )
         self.high_state = np.array(
-            [self.max_position, self.max_scale],  dtype=np.float32
+            [self.max_position, self.min_position], dtype=np.float32
         )
         self.action_space = spaces.Box(
             low=self.min_action, high=self.max_action, shape=(1,), dtype=np.float32
@@ -26,25 +24,21 @@ class Environment(object):
         self.observation_space = spaces.Box(
             low=self.min_position, high=self.max_position, shape=(1,), dtype=np.float32
         )
-    # def _action(self, action):
-    #     act_k = (self.action_space.high - self.action_space.low)/ 2.
-    #     act_b = (self.action_space.high + self.action_space.low)/ 2.
-    #     return act_k * action + act_b
-    #
-    # def _reverse_action(self, action):
-    #     act_k_inv = 2./(self.action_space.high - self.action_space.low)
-    #     act_b = (self.action_space.high + self.action_space.low)/ 2.
-    #     return act_k_inv * (action - act_b)
 
-    def reset(self, data, nb_states, request):
-        state = self.getState(data, 0, nb_states + 1)
-        return state
+    def reset(self):
+        observation = self.getState(0)
+        # request = self.request
+        #
+        # self.state = np.array([observation, request], dtype=np.float32)
+        return observation
 
-    def getState(self, data, step, n):
-        step = step % len(data)
-        block = data[step:step + n] if step < len(data) - n - 1 else data[len(data) - n - 1:len(data)]
-        if step == 0:
-            self.request = 1
+    def seed(self, seed=None):
+        pass
+
+    def getState(self, step, n=2):
+        step = step % len(self.data)
+        block = self.data[step:step + n] if step < len(self.data) - n - 1 else self.data[len(self.data) - n - 1:len(self.data)]
+
         # state = []
         resource = []
         for i in range(n - 1):
@@ -59,17 +53,20 @@ class Environment(object):
             scaling_unit = abs((100 / 75 * state) - request)
         return round(float(scaling_unit),3)
 
-    def step(self, action, state):
-        scaling_unit = self.decide_scaling_unit(state[0], action)
-        if (action * scaling_unit) + self.request > self.max_position:
-            scaling_unit = 1.0
-        if (action * scaling_unit) + self.request < self.min_position:
-            scaling_unit = 1.0
+    def step(self, step, action):
 
-        if ((action * scaling_unit) + self.request < state) & ((action * scaling_unit) + self.request > self.min_position):
+        done = False
+        info = {}
+        resource = self.getState(step)
+
+        if (self.request + action) < self.min_position:
+            action = self.max_position
+
+        if ((resource / (self.request + action)) < 0.75) & ((resource / (self.request + action)) > 0.10):
             reward = 1
-            self.request = (action * scaling_unit) + self.request
-        else :
+            self.request = self.request + action
+        else:
             reward = 0
-        # print('action:{} | state :{} | request :{} | scaling :{}'.format(action, state, self.request, action * scaling_unit))
-        return reward, self.request
+
+        # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action) * 100)))
+        return resource, reward, done, info

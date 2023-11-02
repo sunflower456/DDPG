@@ -14,7 +14,7 @@ class Evaluator(object):
         self.save_path = save_path
         self.results = np.array([]).reshape(num_episodes,0)
 
-    def __call__(self, env, data, agent, request, policy, debug=False, visualize=False, save=True):
+    def __call__(self, env, policy, debug=False, visualize=False, save=True):
 
         self.is_training = False
         observation = None
@@ -22,7 +22,7 @@ class Evaluator(object):
 
         for episode in range(self.num_episodes):
             # reset at the start of episode
-            observation = env.reset(data, agent.nb_states, request)
+            observation = env.reset()
             episode_steps = 0
             episode_reward = 0.
                 
@@ -33,15 +33,14 @@ class Evaluator(object):
             while not done:
                 # basic operation, action ,reward, blablabla ...
                 action = policy(observation)
-
-                reward, request = env.step(action, observation)
-                observation = env.getState(data, episode_steps + 1, agent.nb_states + 1)
+                observation, reward, done, info = env.step(episode_steps, action)
                 if self.max_episode_length and episode_steps >= self.max_episode_length -1:
                     done = True
                 
                 if visualize:
                     env.render(mode='human')
 
+                # agent.observe(reward, observation, done)
                 # update
                 episode_reward += reward
                 episode_steps += 1
@@ -53,7 +52,7 @@ class Evaluator(object):
         self.results = np.hstack([self.results, result])
 
         # if save:
-            # self.save_results('{}/validate_reward'.format(self.save_path))
+        #     self.save_results('{}/validate_reward'.format(self.save_path))
         return np.mean(result), self.results
 
     def save_results(self, fn):
