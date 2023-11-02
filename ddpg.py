@@ -62,11 +62,11 @@ class DDPG(object):
         # Sample batch
         state_batch, action_batch, reward_batch, \
         next_state_batch, terminal_batch = self.memory.sample_and_split(self.batch_size)
-
         # Prepare for the target q batch
+
         next_q_values = self.critic_target([
-            to_tensor(next_state_batch, requires_grad=True),
-            self.actor_target(to_tensor(next_state_batch, requires_grad=True)),
+            to_tensor(next_state_batch, requires_grad=False),
+            self.actor_target(to_tensor(next_state_batch, requires_grad=False)),
         ])
 
         target_q_batch = to_tensor(reward_batch) + \
@@ -74,7 +74,6 @@ class DDPG(object):
 
         # Critic update
         self.critic.zero_grad()
-
         q_batch = self.critic([ to_tensor(state_batch), to_tensor(action_batch) ])
         
         value_loss = criterion(q_batch, target_q_batch)

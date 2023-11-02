@@ -21,6 +21,7 @@ def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_epi
     for episode in range(args.max_episode_length):
         episode_reward = 0
         observation = deepcopy(env.reset())
+        # observation = np.array(observation, dtype=np.float32)
         agent.is_training = True
         agent.reset(observation)
         action_cnt = 0
@@ -33,11 +34,13 @@ def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_epi
             # env response with next_observation, reward, terminate_info
             observation2, reward, done, info = env.step(step+1, action)
             observation2 = deepcopy(observation2)
+            # observation2 = np.array(observation2, dtype=np.float32)
             if args.max_episode_length and step >= args.max_episode_length - 1:
                 done = True
 
             # agent observe and update policy
             agent.observe(reward, observation2, done)
+
             if step > args.warmup:
                 agent.update_policy()
 

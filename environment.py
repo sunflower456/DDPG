@@ -6,6 +6,7 @@ from gym import spaces
 class Environment(gym.Env):
     metadata = {'render.modes': ['human'] }
     def __init__(self, data):
+        self.initial_request = 0.1
         self.request = 0.1
         self.min_action = -1.0
         self.max_action = 1.0
@@ -26,11 +27,9 @@ class Environment(gym.Env):
         )
 
     def reset(self):
-        observation = self.getState(0)
-        # request = self.request
-        #
-        # self.state = np.array([observation, request], dtype=np.float32)
-        return observation
+        # resource = self.getState(0)
+        request = np.array(self.initial_request).reshape(1)
+        return request
 
     def seed(self, seed=None):
         pass
@@ -63,12 +62,15 @@ class Environment(gym.Env):
             action = self.max_position
 
         if ((resource / (self.request + action)) < 0.75) & ((resource / (self.request + action)) > 0.10):
-            reward = 1
-            self.request = self.request + action
-        elif ((resource / (self.request + action)) <= 0.10) :
+            if (self.request + action) <= self.min_position:
+                reward = 1
+            else:
+                reward = 1
+                self.request = self.request + action
+        elif ((resource / (self.request + action)) <= 0.10) | (((resource / (self.request + action)) >= 0.75) & (resource / (self.request + action) < 1.0)):
             reward = 0
         else:
             reward = -1
-
-        # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action) * 100)))
-        return resource, reward, done, info
+        request = np.array(self.request).reshape(1)
+        # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
+        return request, reward, done, info
