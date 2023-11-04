@@ -14,22 +14,23 @@ class Environment(gym.Env):
         self.max_position = 1.0
         self.data = data
         self.low_state = np.array(
-            [self.max_position, self.min_position], dtype=np.float32
+            [self.min_position, self.min_position], dtype=np.float32
         )
         self.high_state = np.array(
-            [self.max_position, self.min_position], dtype=np.float32
+            [self.max_position, self.max_position], dtype=np.float32
         )
         self.action_space = spaces.Box(
             low=self.min_action, high=self.max_action, shape=(1,), dtype=np.float32
         )
         self.observation_space = spaces.Box(
-            low=self.min_position, high=self.max_position, shape=(1,), dtype=np.float32
+            low=self.low_state, high=self.high_state, dtype=np.float32
         )
 
     def reset(self):
-        # resource = self.getState(0)
-        request = np.array(self.initial_request).reshape(1)
-        return request
+        resource = self.getState(0)
+        request = self.initial_request
+        state = np.array([request, resource], dtype=np.float32).reshape(2)
+        return state
 
     def seed(self, seed=None):
         pass
@@ -71,6 +72,6 @@ class Environment(gym.Env):
             reward = 0
         else:
             reward = -1
-        request = np.array(self.request).reshape(1)
-        # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
-        return request, reward, done, info
+        state = np.array([self.request, resource], dtype=np.float32).reshape(2)
+        print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
+        return state, reward, done, info

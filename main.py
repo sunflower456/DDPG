@@ -40,7 +40,6 @@ def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_epi
 
             # agent observe and update policy
             agent.observe(reward, observation2, done)
-
             if step > args.warmup:
                 agent.update_policy()
 
@@ -115,8 +114,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch on TORCS with Multi-modal')
 
-    parser.add_argument('--mode', default='train', type=str, help='support option: train/test')
-    parser.add_argument('--env', default='kubernetes_pod_container_vehicle_train', type=str, help='open-ai gym environment')
+    parser.add_argument('--mode', default='test', type=str, help='support option: train/test')
+    parser.add_argument('--env', default='kubernetes_pod_container_vehicle_test', type=str, help='open-ai gym environment')
     parser.add_argument('--hidden1', default=400, type=int, help='hidden num of first fully connect layer')
     parser.add_argument('--hidden2', default=300, type=int, help='hidden num of second fully connect layer')
     parser.add_argument('--rate', default=0.001, type=float, help='learning rate')
@@ -130,8 +129,8 @@ if __name__ == "__main__":
     parser.add_argument('--ou_theta', default=0.15, type=float, help='noise theta')
     parser.add_argument('--ou_sigma', default=0.2, type=float, help='noise sigma')
     parser.add_argument('--ou_mu', default=0.0, type=float, help='noise mu')
-    parser.add_argument('--validate_episodes', default=50, type=int, help='how many episode to perform during validate experiment')
-    parser.add_argument('--max_episode_length', default=1000, type=int, help='')
+    parser.add_argument('--validate_episodes', default=5, type=int, help='how many episode to perform during validate experiment')
+    parser.add_argument('--max_episode_length', default=100, type=int, help='')
     parser.add_argument('--validate_steps', default=2000, type=int, help='how many steps to perform a validate experiment')
     parser.add_argument('--output', default='output', type=str, help='')
     parser.add_argument('--debug',  dest='debug', action='store_true')
@@ -146,7 +145,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.output = get_output_folder(args.output, args.env)
     if args.resume == 'default':
-        args.resume = 'output/{}-run1'.format(args.env)
+        args.resume = 'output/kubernetes_pod_container_vehicle_train-run70'.format(args.env)
 
     data = util.getResourceDataVec(args.env)
     env = Environment(data)
