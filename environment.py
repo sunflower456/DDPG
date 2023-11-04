@@ -59,14 +59,16 @@ class Environment(gym.Env):
         info = {}
         resource = self.getState(step)
 
-        if (self.request + action) < self.min_position:
-            action = self.max_position
+        if ((resource/self.request) < 0.75) & ((resource/self.request) > 0.10):
+            action = 0.0
 
         if ((resource / (self.request + action)) < 0.75) & ((resource / (self.request + action)) > 0.10):
             if (self.request + action) <= self.min_position:
                 reward = 1
             else:
                 reward = 1
+                if (self.request + action) < self.min_position:
+                    action = self.max_position
                 self.request = self.request + action
         elif ((resource / (self.request + action)) <= 0.10) | (((resource / (self.request + action)) >= 0.75) & (resource / (self.request + action) < 1.0)):
             reward = 0

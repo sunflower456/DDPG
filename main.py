@@ -25,6 +25,7 @@ def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_epi
         agent.is_training = True
         agent.reset(observation)
         action_cnt = 0
+        action_zero_cnt = 0
 
         for step in range(l-agent.nb_states):
             if step <= args.warmup:
@@ -55,6 +56,8 @@ def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_epi
 
             if (action == 1.0) | (action == -1.0):
                 action_cnt = action_cnt + 1
+            if action == 0.0:
+                action_zero_cnt = action_zero_cnt + 1
             episode_reward += reward
 
             observation = deepcopy(observation2)
@@ -64,7 +67,7 @@ def train(num_iterations, agent, env,  evaluate, validate_steps, output, max_epi
                 if(episode != 0) & (episode % 100 == 0):
                     save_results('./output/validate_reward_' + str(episode), episodes, results, total_rewards)
                 # print('===================================================')
-                print('#{}: episode_reward:{} | validate_reward:{} | action zero count:{}'.format(episode, round(episode_reward, 2), round(validate_reward, 2), action_cnt))
+                print('#{}: episode_reward:{} | validate_reward:{} | action invalid count:{} | action zero count:{}'.format(episode, round(episode_reward, 2), round(validate_reward, 2), action_cnt, action_zero_cnt))
                 # print('===================================================')
 
                 agent.memory.append(
@@ -115,7 +118,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch on TORCS with Multi-modal')
 
     parser.add_argument('--mode', default='test', type=str, help='support option: train/test')
-    parser.add_argument('--env', default='kubernetes_pod_container_vehicle_test', type=str, help='open-ai gym environment')
+    parser.add_argument('--env', default='kubernetes_pod_container_zipkin_test', type=str, help='open-ai gym environment')
     parser.add_argument('--hidden1', default=400, type=int, help='hidden num of first fully connect layer')
     parser.add_argument('--hidden2', default=300, type=int, help='hidden num of second fully connect layer')
     parser.add_argument('--rate', default=0.001, type=float, help='learning rate')
@@ -145,7 +148,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.output = get_output_folder(args.output, args.env)
     if args.resume == 'default':
-        args.resume = 'output/kubernetes_pod_container_vehicle_train-run70'.format(args.env)
+        args.resume = 'output/kubernetes_pod_container_zipkin_train-run80'.format(args.env)
 
     data = util.getResourceDataVec(args.env)
     env = Environment(data)
