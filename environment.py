@@ -46,7 +46,7 @@ class Environment(gym.Env):
         return np.array(resource)
 
 
-    def step(self, step, action):
+    def step(self, step, mode, action):
 
         done = False
         info = {}
@@ -68,5 +68,6 @@ class Environment(gym.Env):
         else:
             reward = -1
         state = np.array([self.request, resource], dtype=np.float32).reshape(2)
-        # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
+        if mode == 'test':
+            print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
         return state, reward, done, info, np.array(action, dtype=np.float32).reshape(1)

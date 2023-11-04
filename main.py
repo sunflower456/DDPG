@@ -33,7 +33,7 @@ def train(agent, env,  evaluate, validate_steps, output, debug=False):
             else:
                 action = agent.select_action(observation)
             # env response with next_observation, reward, terminate_info
-            observation2, reward, done, info, action = env.step(step+1, action)
+            observation2, reward, done, info, action = env.step(step+1, args.mode, action)
             agent.a_t = action
             observation2 = deepcopy(observation2)
             # observation2 = np.array(observation2, dtype=np.float32)
@@ -48,7 +48,7 @@ def train(agent, env,  evaluate, validate_steps, output, debug=False):
             # [optional] evaluate
             if evaluate is not None and validate_steps > 0 and step % validate_steps == 0:
                 policy = lambda x: agent.select_action(x, decay_epsilon=False)
-                validate_reward, results = evaluate(env, policy, debug=False, visualize=False)
+                validate_reward, results = evaluate(env, policy, args.mode, debug=False, visualize=False)
                 if debug: prYellow('[Evaluate] Step_{:07d}: mean_reward:{}'.format(step, validate_reward))
 
             # [optional] save intermideate model
@@ -91,7 +91,7 @@ def test(num_episodes, agent, env, evaluate, model_path):
     policy = lambda x: agent.select_action(x, decay_epsilon=False)
 
     for i in range(num_episodes):
-        validate_reward, results = evaluate(env, policy, debug=False, visualize=False)
+        validate_reward, results = evaluate(env, policy, args.mode, debug=False, visualize=False)
         print('[Evaluate] #{}: mean_reward:{}'.format(i, validate_reward))
 
 def save_results(fn, episodes, result, reward):
@@ -118,8 +118,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch on TORCS with Multi-modal')
 
-    parser.add_argument('--mode', default='train', type=str, help='support option: train/test')
-    parser.add_argument('--env', default='kubernetes_pod_container_zipkin_train', type=str, help='open-ai gym environment')
+    parser.add_argument('--mode', default='test', type=str, help='support option: train/test')
+    parser.add_argument('--env', default='kubernetes_pod_container_zipkin_test', type=str, help='open-ai gym environment')
     parser.add_argument('--hidden1', default=400, type=int, help='hidden num of first fully connect layer')
     parser.add_argument('--hidden2', default=300, type=int, help='hidden num of second fully connect layer')
     parser.add_argument('--rate', default=0.001, type=float, help='learning rate')
@@ -150,9 +150,12 @@ if __name__ == "__main__":
     args.output = get_output_folder(args.output, args.env)
     if args.resume == 'default':
         if args.mode == 'train':
-            args.resume = 'output/{}-{}-run1'.format(args.mode, args.env)
+            args.resume = 'output/{}-run1'.format(args.mode, args.env)
+
         else:
-            args.resume = 'output/{}-{}-run87'.format(args.mode, args.env)
+            args.resume = 'output/kubernetes_pod_container_zipkin_train-run87'.format(args.mode, args.env)
+            args.validate_episodes = 5
+            args.max_episode_length = 100
 
     data = util.getResourceDataVec(args.env)
     env = Environment(data)
