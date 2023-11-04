@@ -23,7 +23,6 @@ class Evaluator(object):
         for episode in range(self.num_episodes):
             # reset at the start of episode
             observation = env.reset()
-            # observation = np.array([observation], dtype=np.float32)
             episode_steps = 0
             episode_reward = 0.
                 
@@ -34,14 +33,14 @@ class Evaluator(object):
             while not done:
                 # basic operation, action ,reward, blablabla ...
                 action = policy(observation)
-                observation, reward, done, info = env.step(episode_steps, action)
+                observation, reward, done, info, action = env.step(episode_steps, action)
+
                 if self.max_episode_length and episode_steps >= self.max_episode_length -1:
                     done = True
                 
                 if visualize:
                     env.render(mode='human')
 
-                # agent.observe(reward, observation, done)
                 # update
                 episode_reward += reward
                 episode_steps += 1

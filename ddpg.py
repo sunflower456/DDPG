@@ -126,7 +126,6 @@ class DDPG(object):
         action = np.clip(action, -1., 1.)
         if decay_epsilon:
             self.epsilon -= self.depsilon
-
         self.a_t = action
         return action
 

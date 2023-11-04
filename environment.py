@@ -27,7 +27,7 @@ class Environment(gym.Env):
         )
 
     def reset(self):
-        resource = self.getState(0)
+        resource = self.getResource(0)
         request = self.initial_request
         state = np.array([request, resource], dtype=np.float32).reshape(2)
         return state
@@ -35,7 +35,7 @@ class Environment(gym.Env):
     def seed(self, seed=None):
         pass
 
-    def getState(self, step, n=2):
+    def getResource(self, step, n=2):
         step = step % len(self.data)
         block = self.data[step:step + n] if step < len(self.data) - n - 1 else self.data[len(self.data) - n - 1:len(self.data)]
 
@@ -45,35 +45,28 @@ class Environment(gym.Env):
             resource.append(block[i])
         return np.array(resource)
 
-    def decide_scaling_unit(self, state, action):
-        request = self.request
-        if action > 0:
-            scaling_unit = abs(request - (100 / 75 * state))
-        else:
-            scaling_unit = abs((100 / 75 * state) - request)
-        return round(float(scaling_unit),3)
 
     def step(self, step, action):
 
         done = False
         info = {}
-        resource = self.getState(step)
+        resource = self.getResource(step)
 
         if ((resource/self.request) < 0.75) & ((resource/self.request) > 0.10):
             action = 0.0
 
+
         if ((resource / (self.request + action)) < 0.75) & ((resource / (self.request + action)) > 0.10):
             if (self.request + action) <= self.min_position:
-                reward = 1
+                reward = 0
             else:
                 reward = 1
-                if (self.request + action) < self.min_position:
-                    action = self.max_position
                 self.request = self.request + action
-        elif ((resource / (self.request + action)) <= 0.10) | (((resource / (self.request + action)) >= 0.75) & (resource / (self.request + action) < 1.0)):
-            reward = 0
+        elif (((resource / (self.request + action)) <= 0.10)
+              | (((resource / (self.request + action)) >= 0.75) & (resource / (self.request + action) < 1.0))):
+            reward = -0.1
         else:
             reward = -1
         state = np.array([self.request, resource], dtype=np.float32).reshape(2)
-        print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
-        return state, reward, done, info
+        # print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(action, resource, reward, self.request, (resource / (self.request + action))))
+        return state, reward, done, info, np.array(action, dtype=np.float32).reshape(1)
