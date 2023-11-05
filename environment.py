@@ -6,10 +6,10 @@ from gym import spaces
 class Environment(gym.Env):
     metadata = {'render.modes': ['human'] }
     def __init__(self, data):
-        self.initial_request = 0.1
-        self.request = 0.1
+        self.initial_request = 0.01
+        self.request = 0.01
         self.min_action = -1.0
-        self.max_action = 1.0
+        self.max_action = 1.5
         self.min_position = 0.0
         self.max_position = 4.0
         self.max_ration = 1.0
@@ -64,6 +64,7 @@ class Environment(gym.Env):
                 if ((resource/self.request) < 0.75) & ((resource/self.request) > 0.10):
                     reward = 1
                     action = 0.0
+                    scaled = True
                 else:
                     reward = 1
                     self.request = self.request + action
