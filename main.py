@@ -33,8 +33,8 @@ def train(agent, env,  evaluate, validate_steps, output, debug=False):
             else:
                 action = agent.select_action(observation)
             # env response with next_observation, reward, terminate_info
-            observation2, reward, done, info, action = env.step(step+1, args.mode, action)
-            agent.a_t = action
+            observation2, reward, done, info = env.step(step+1, args.mode, action)
+            # agent.a_t = action
             observation2 = deepcopy(observation2)
             # observation2 = np.array(observation2, dtype=np.float32)
             if args.max_episode_length and step >= args.max_episode_length - 1:
@@ -147,15 +147,17 @@ if __name__ == "__main__":
     # parser.add_argument('--cuda', dest='cuda', action='store_true') # TODO
 
     args = parser.parse_args()
-    args.output = get_output_folder(args.output, args.env)
     if args.resume == 'default':
         if args.mode == 'train':
-            args.resume = 'output/{}-run1'.format(args.mode, args.env)
-
+            args.env = 'kubernetes_pod_container_zipkin_train'
+            args.resume = 'output/{}-run1'.format(args.env)
         else:
-            args.resume = 'output/kubernetes_pod_container_zipkin_train-run87'.format(args.mode, args.env)
+            args.env = 'kubernetes_pod_container_zipkin_test'
+            args.resume = 'output/kubernetes_pod_container_zipkin_train-run91'
             args.validate_episodes = 5
             args.max_episode_length = 100
+
+    args.output = get_output_folder(args.output, args.env)
 
     data = util.getResourceDataVec(args.env)
     env = Environment(data)
