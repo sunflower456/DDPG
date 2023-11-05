@@ -118,8 +118,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch on TORCS with Multi-modal')
 
-    parser.add_argument('--mode', default='test', type=str, help='support option: train/test')
-    parser.add_argument('--env', default='kubernetes_pod_container_zipkin_test', type=str, help='open-ai gym environment')
+    parser.add_argument('--mode', default='train', type=str, help='support option: train/test')
+    parser.add_argument('--env', default='kubernetes_pod_container_zipkin_train', type=str, help='open-ai gym environment')
     parser.add_argument('--hidden1', default=400, type=int, help='hidden num of first fully connect layer')
     parser.add_argument('--hidden2', default=300, type=int, help='hidden num of second fully connect layer')
     parser.add_argument('--rate', default=0.001, type=float, help='learning rate')
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             args.resume = 'output/{}-run1'.format(args.env)
         else:
             args.env = 'kubernetes_pod_container_zipkin_test'
-            args.resume = 'output/kubernetes_pod_container_zipkin_train-run91'
+            args.resume = 'output/kubernetes_pod_container_zipkin_train-run93'
             args.validate_episodes = 5
             args.max_episode_length = 100
 

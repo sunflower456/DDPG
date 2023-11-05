@@ -30,7 +30,7 @@ class Environment(gym.Env):
     def reset(self):
         resource = self.getResource(0)
         request = self.initial_request
-        state = np.array([request, resource/request, False], dtype=np.float32).reshape(3)
+        state = np.array([request, 0.5, False], dtype=np.float32).reshape(3)
         return state
 
     def seed(self, seed=None):
@@ -73,7 +73,11 @@ class Environment(gym.Env):
             reward = -0.1
         else:
             reward = -1
-        state = np.array([self.request, (resource / self.request), scaled], dtype=np.float32).reshape(3)
+
+        usage = resource / self.request
+        if scaled == False:
+            usage = 0.5
+        state = np.array([self.request, usage, scaled], dtype=np.float32).reshape(3)
         if mode == 'test':
             print('scaled: {} | action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(scaled, action, resource, reward, self.request, (resource / self.request)))
         return state, reward, done, info
