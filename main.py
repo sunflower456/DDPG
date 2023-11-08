@@ -55,7 +55,7 @@ def train(agent, env,  evaluate, validate_steps, output, debug=False):
             if step % 10 == 0:
                 agent.save_model(output)
 
-            if (action == 1.0) | (action == -1.0):
+            if (action == env.min_action) | (action == env.max_action):
                 action_cnt = action_cnt + 1
             if action == 0.0:
                 action_zero_cnt = action_zero_cnt + 1
@@ -68,7 +68,8 @@ def train(agent, env,  evaluate, validate_steps, output, debug=False):
                 if(episode != 0) & (episode % 100 == 0):
                     save_results('./output/validate_reward_' + str(episode), episodes, results, total_rewards)
                 # print('===================================================')
-                print('#{}: episode_reward:{} | validate_reward:{} | action invalid count:{} | action zero count:{}'.format(episode, round(episode_reward, 2), round(validate_reward, 2), action_cnt, action_zero_cnt))
+                print('#{}: episode_reward:{} | validate_reward:{} | action invalid count:{} | action zero count:{}'
+                      .format(episode, round(episode_reward, 2), round(validate_reward, 2), action_cnt, action_zero_cnt))
                 # print('===================================================')
 
                 agent.memory.append(
@@ -118,7 +119,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='PyTorch on TORCS with Multi-modal')
 
-    parser.add_argument('--mode', default='train', type=str, help='support option: train/test')
+    parser.add_argument('--mode', default='test', type=str, help='support option: train/test')
     parser.add_argument('--env', default='kubernetes_pod_container_kibana_train', type=str, help='open-ai gym environment')
     parser.add_argument('--hidden1', default=400, type=int, help='hidden num of first fully connect layer')
     parser.add_argument('--hidden2', default=300, type=int, help='hidden num of second fully connect layer')
@@ -153,7 +154,7 @@ if __name__ == "__main__":
             args.resume = 'output/{}-run1'.format(args.env)
         else:
             args.env = 'kubernetes_pod_container_kibana_test_scaled'
-            args.resume = 'output/kubernetes_pod_container_kibana_train_scaled-run96'
+            args.resume = 'output/kubernetes_pod_container_kibana_train_scaled-run148'
             args.validate_episodes = 5
             args.max_episode_length = 100
 

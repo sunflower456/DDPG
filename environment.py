@@ -11,14 +11,16 @@ class Environment(gym.Env):
         self.min_action = -1.0
         self.max_action = 1.5
         self.min_position = 0.0
-        self.max_position = 4.0
-        self.max_ration = 1.0
+        self.max_position = 1.5
+        self.max_ratio = 1.0
+        self.uppser_bound = 0.8
+        self.lower_bound = 0.2
         self.data = data
         self.low_state = np.array(
             [self.min_position, self.min_position, self.min_position], dtype=np.float32
         )
         self.high_state = np.array(
-            [self.max_position, self.max_position, self.max_ration], dtype=np.float32
+            [self.max_position, self.max_position, self.max_position], dtype=np.float32
         )
         self.action_space = spaces.Box(
             low=self.min_action, high=self.max_action, shape=(1,), dtype=np.float32
@@ -30,7 +32,7 @@ class Environment(gym.Env):
     def reset(self):
         resource = self.getResource(0)
         request = self.initial_request
-        state = np.array([request, 0.5, False], dtype=np.float32).reshape(3)
+        state = np.array([request, 0.5, resource], dtype=np.float32).reshape(3)
         return state
 
     def seed(self, seed=None):
@@ -53,32 +55,24 @@ class Environment(gym.Env):
         info = {}
         resource = self.getResource(step)
 
-        # if ((resource/self.request) < 0.75) & ((resource/self.request) > 0.10):
-        #     action = 0.0
-
-        scaled = False
-        if ((resource / (self.request + action)) < 0.75) & ((resource / (self.request + action)) > 0.10):
-            if (self.request + action) <= self.min_position:
-                reward = 0
+        if (self.request + action) <= self.min_position :
+            reward = 0
+        else :
+            if ((resource / (self.request + action)) < self.uppser_bound) & ((resource / (self.request + action)) > self.lower_bound):
+                self.request = self.request + action
+                reward = 1
+            elif resource / (self.request + action) <= self.lower_bound:
+                reward = -0.5
+            elif (resource / (self.request + action) >= self.uppser_bound) & (resource / (self.request + action) < 1.0):
+                reward = -0.5
             else:
-                if ((resource/self.request) < 0.75) & ((resource/self.request) > 0.10):
-                    reward = 1
-                    action = 0.0
-                    scaled = True
-                else:
-                    reward = 1
-                    self.request = self.request + action
-                    scaled = True
-        elif (((resource / (self.request + action)) <= 0.10)
-              | (((resource / (self.request + action)) >= 0.75) & (resource / (self.request + action) < 1.0))):
-            reward = -0.1
-        else:
-            reward = -1
+                reward = -1
 
         usage = resource / self.request
-        if scaled == False:
-            usage = 0.5
-        state = np.array([self.request, usage, scaled], dtype=np.float32).reshape(3)
+
+
+        state = np.array([self.request, usage, resource], dtype=np.float32).reshape(3)
         if mode == 'test':
-            print('scaled: {} | action:{} | state :{} |  reward :{} | request :{} | ratio :{}'.format(scaled, action, resource, reward, self.request, (resource / self.request)))
+            print('action:{} | state :{} |  reward :{} | request :{} | ratio :{}'
+                  .format(action, resource, reward, self.request, usage))
         return state, reward, done, info
