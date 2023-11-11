@@ -6,10 +6,10 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import torch
 
+import util
 from normalized_env import NormalizedEnv
 from evaluator import Evaluator
 from ddpg import DDPG
-from util import *
 from environment import *
 
 
@@ -49,7 +49,7 @@ def train(agent, env,  evaluate, validate_steps, output, debug=False):
             if evaluate is not None and validate_steps > 0 and step % validate_steps == 0:
                 policy = lambda x: agent.select_action(x, decay_epsilon=False)
                 validate_reward, results = evaluate(env, policy, args.mode, debug=False, visualize=False)
-                if debug: prYellow('[Evaluate] Step_{:07d}: mean_reward:{}'.format(step, validate_reward))
+                if debug: util.prYellow('[Evaluate] Step_{:07d}: mean_reward:{}'.format(step, validate_reward))
 
             # [optional] save intermideate model
             if step % 10 == 0:
@@ -154,11 +154,11 @@ if __name__ == "__main__":
             args.resume = 'output/{}-run1'.format(args.env)
         else:
             args.env = 'kubernetes_pod_container_kibana_test_scaled'
-            args.resume = 'output/kubernetes_pod_container_kibana_train_scaled-run148'
+            args.resume = 'output/kubernetes_pod_container_kibana_train_scaled-run156'
             args.validate_episodes = 5
             args.max_episode_length = 100
 
-    args.output = get_output_folder(args.output, args.env)
+    args.output = util.get_output_folder(args.output, args.env)
 
     data = util.getResourceDataVec(args.env)
     env = Environment(data)
